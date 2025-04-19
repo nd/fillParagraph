@@ -47,10 +47,44 @@ data class Paragraph(
 
 
 fun getParagraph(doc: Document, offset: Int): Paragraph? {
-    val line = doc.getLineNumber(offset)
-    val lineStart = doc.getLineStartOffset(line)
-    val lineEnd = doc.getLineEndOffset(line)
-    return Paragraph(lineStart, lineEnd, listOf(doc.text.substring(lineStart, lineEnd)))
+    val lines = mutableListOf<String>()
+
+    // up
+    val currentLine = doc.getLineNumber(offset)
+    var paragraphStart = Int.MAX_VALUE
+    var paragraphEnd = 0
+    var line = currentLine
+    while (line >= 0) {
+        val lineStart = doc.getLineStartOffset(line)
+        val lineEnd = doc.getLineEndOffset(line)
+        val lineText = doc.text.substring(lineStart, lineEnd)
+        if (lineText.isBlank()) {
+            break
+        }
+        lines.add(lineText)
+        paragraphStart = lineStart
+        if (paragraphEnd == 0) {
+            paragraphEnd = lineEnd
+        }
+        line--
+    }
+    lines.reverse()
+
+    // down
+    line = currentLine + 1
+    while (line < doc.lineCount) {
+        val lineStart = doc.getLineStartOffset(line)
+        val lineEnd = doc.getLineEndOffset(line)
+        val lineText = doc.text.substring(lineStart, lineEnd)
+        if (lineText.isBlank()) {
+            break
+        }
+        lines.add(lineText)
+        paragraphEnd = lineEnd
+        line++
+    }
+
+    return Paragraph(paragraphStart, paragraphEnd, lines)
 }
 
 
