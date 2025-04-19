@@ -19,11 +19,11 @@
         </component>
     </project-components>
 
-    <actions>
-        <action class="xxx" text="xxx"/>
-    </actions>
-
     -->
+
+    <actions>
+        <action class="fp.FillParagraphAction" text="Fill"/>
+    </actions>
 
     <depends>com.intellij.modules.lang</depends>
 </idea-plugin>
