@@ -1,0 +1,33 @@
+buildscript {
+    ext.kotlin_version = '1.9.0'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+plugins {
+  id 'org.jetbrains.intellij' version '1.17.0'
+  id 'java'
+}
+
+repositories {
+  mavenCentral()
+}
+
+apply plugin: 'idea'
+apply plugin: 'kotlin'
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'java'
+
+intellij {
+  version = '2024.3'
+  updateSinceUntilBuild = false
+}
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+}
+kotlin {
+    jvmToolchain(17)
+}

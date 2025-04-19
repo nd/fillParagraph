@@ -1,0 +1,29 @@
+
+<idea-plugin>
+    <id>ID</id>
+    <name>NAME</name>
+    <vendor email="dmitry.neverov@gmail.com">me</vendor>
+
+    <idea-version since-build="243"/>
+
+    <version>1</version>
+
+    <description>
+        Fill paragraph
+    </description>
+
+    <!--
+    <project-components>
+        <component>
+            <implementation-class>xxx</implementation-class>
+        </component>
+    </project-components>
+
+    <actions>
+        <action class="xxx" text="xxx"/>
+    </actions>
+
+    -->
+
+    <depends>com.intellij.modules.lang</depends>
+</idea-plugin>
