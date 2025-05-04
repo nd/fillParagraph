@@ -10,7 +10,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiUtilBase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +23,6 @@ class FillParagraphAction: AnAction("XFillParagraph") {
         val doc = editor.document
         val offset = editor.caretModel.offset
 
-        val file = PsiDocumentManager.getInstance(project).getPsiFile(doc)
         val lang = PsiUtilBase.getLanguageInEditor(editor.caretModel.primaryCaret, project) ?: return
         val commenter = LanguageCommenters.INSTANCE.forLanguage(lang)
         val lineCommentPrefix = commenter?.lineCommentPrefix ?: ""
@@ -72,22 +70,24 @@ fun getParagraph(doc: Document, offset: Int, lineCommentPrefix: String): Paragra
         val lineStart = doc.getLineStartOffset(line)
         val lineEnd = doc.getLineEndOffset(line)
         val lineText = doc.text.substring(lineStart, lineEnd)
-        if (lineText.isBlank()) {
-            break
-        }
 
         val commentStart = lineText.indexOf(lineCommentPrefix)
-        if (commentStart == -1 || lineText.substring(0, commentStart).isNotBlank()) {
+        if (commentStart == -1 || lineText.take(commentStart).isNotBlank()) {
             // not a line with a comment
             break
         }
 
-        val commentTextStart = commentStart + lineCommentPrefix.length
+        val textStart = commentStart + lineCommentPrefix.length
         if (paragraphPrefix == null) {
-            paragraphPrefix = lineText.substring(0, commentTextStart)
+            paragraphPrefix = lineText.take(textStart)
         }
 
-        lines.add(lineText.substring(commentTextStart))
+        val text = lineText.substring(textStart)
+        if (text.isBlank()) {
+            break
+        }
+
+        lines.add(text)
         paragraphStart = lineStart
         if (paragraphEnd == 0) {
             paragraphEnd = lineEnd
@@ -108,17 +108,20 @@ fun getParagraph(doc: Document, offset: Int, lineCommentPrefix: String): Paragra
         val lineStart = doc.getLineStartOffset(line)
         val lineEnd = doc.getLineEndOffset(line)
         val lineText = doc.text.substring(lineStart, lineEnd)
-        if (lineText.isBlank()) {
-            break
-        }
+
         val commentStart = lineText.indexOf(lineCommentPrefix)
         if (commentStart == -1 || lineText.substring(0, commentStart).isNotBlank()) {
             // not a line with a comment
             break
         }
 
-        val commentTextStart = commentStart + lineCommentPrefix.length
-        lines.add(lineText.substring(commentTextStart))
+        val textStart = commentStart + lineCommentPrefix.length
+        val text = lineText.substring(textStart)
+        if (text.isBlank()) {
+            break
+        }
+
+        lines.add(text)
 
         paragraphEnd = lineEnd
         line++
