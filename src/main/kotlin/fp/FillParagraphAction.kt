@@ -10,7 +10,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiUtilBase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +23,6 @@ class FillParagraphAction: AnAction("XFillParagraph") {
         val doc = editor.document
         val offset = editor.caretModel.offset
 
-        val file = PsiDocumentManager.getInstance(project).getPsiFile(doc)
         val lang = PsiUtilBase.getLanguageInEditor(editor.caretModel.primaryCaret, project) ?: return
         val commenter = LanguageCommenters.INSTANCE.forLanguage(lang)
         val lineCommentPrefix = commenter?.lineCommentPrefix ?: ""
