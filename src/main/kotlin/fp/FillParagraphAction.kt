@@ -35,9 +35,7 @@ class FillParagraphAction: AnAction("Fill") {
 class FpService(
     val project: Project,
     val cs: CoroutineScope
-) {
-
-}
+)
 
 data class Paragraph(
     val startOffset: Int,
@@ -87,11 +85,46 @@ fun getParagraph(doc: Document, offset: Int): Paragraph? {
     return Paragraph(paragraphStart, paragraphEnd, lines)
 }
 
+fun String.skipSpaces(fromIdx: Int = 0): Int {
+    for (i in fromIdx until length) {
+        if (this[i] != ' ' && this[i] != '\t') {
+            return i
+        }
+    }
+    return length
+}
 
+
+val whiteSpaces = charArrayOf(' ', '\t')
+
+// returns new lines composing a refilled paragraph
 fun fillParagraph(p: Paragraph): List<String> {
+    val paragraphWidth = 70
     val result = arrayListOf<String>()
+    val currentLine = StringBuilder()
+    var wordStart: Int
+    var wordEnd: Int
     for (line in p.lines) {
-        result.add(line + " hui")
+        wordStart = line.skipSpaces()
+        while (wordStart < line.length) {
+            wordEnd = line.indexOfAny(whiteSpaces, wordStart)
+            if (wordEnd == -1) {
+                wordEnd = line.length
+            }
+            if (currentLine.isNotEmpty() && currentLine.length + (wordEnd - wordStart) + 1 > paragraphWidth) {
+                // if current line is empty and the word is long add it anyway
+                result.add(currentLine.toString())
+                currentLine.setLength(0)
+            }
+            else if (currentLine.isNotEmpty()) {
+                currentLine.append(' ')
+            }
+            currentLine.append(line.substring(wordStart, wordEnd))
+            wordStart = line.skipSpaces(wordEnd)
+        }
+    }
+    if (currentLine.isNotEmpty()) {
+        result.add(currentLine.toString())
     }
     return result
 }
