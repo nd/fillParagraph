@@ -12,17 +12,8 @@
         Fill paragraph
     </description>
 
-    <!--
-    <project-components>
-        <component>
-            <implementation-class>xxx</implementation-class>
-        </component>
-    </project-components>
-
-    -->
-
     <actions>
-        <action class="fp.FillParagraphAction" text="Fill"/>
+        <action class="fp.FillParagraphAction" text="XFillParagraph"/>
     </actions>
 
     <depends>com.intellij.modules.lang</depends>

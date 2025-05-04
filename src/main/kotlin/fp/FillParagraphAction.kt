@@ -1,5 +1,6 @@
 package fp
 
+import com.intellij.lang.LanguageCommenters
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -9,22 +10,35 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.util.PsiUtilBase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class FillParagraphAction: AnAction("Fill") {
+
+class FillParagraphAction: AnAction("XFill") {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val editor = CommonDataKeys.EDITOR.getData(e.dataContext) ?: return
         val doc = editor.document
         val offset = editor.caretModel.offset
-        val p = getParagraph(doc, offset) ?: return
+
+        val file = PsiDocumentManager.getInstance(project).getPsiFile(doc)
+        val lang = PsiUtilBase.getLanguageInEditor(editor.caretModel.primaryCaret, project) ?: return
+        val commenter = LanguageCommenters.INSTANCE.forLanguage(lang)
+        val lineCommentPrefix = commenter?.lineCommentPrefix ?: ""
+
+        val p = getParagraph(doc, offset, lineCommentPrefix) ?: return
         val lines = fillParagraph(p)
 
+        val refilledText = lines.joinToString("\n") {
+            line -> p.paragraphPrefix + line
+        }
+
         project.service<FpService>().cs.launch(Dispatchers.EDT) {
-            writeCommandAction(project, "Fill") {
-                doc.replaceString(p.startOffset, p.endOffset, lines.joinToString("\n"))
+            writeCommandAction(project, "XFillParagraph") {
+                doc.replaceString(p.startOffset, p.endOffset, refilledText)
             }
         }
     }
@@ -41,10 +55,11 @@ data class Paragraph(
     val startOffset: Int,
     val endOffset: Int,
     val lines: List<String>,
+    val paragraphPrefix: String? = null // to be inserted before each line of refilled paragraph
 )
 
 
-fun getParagraph(doc: Document, offset: Int): Paragraph? {
+fun getParagraph(doc: Document, offset: Int, lineCommentPrefix: String): Paragraph? {
     val lines = mutableListOf<String>()
 
     // up
@@ -52,6 +67,7 @@ fun getParagraph(doc: Document, offset: Int): Paragraph? {
     var paragraphStart = Int.MAX_VALUE
     var paragraphEnd = 0
     var line = currentLine
+    var paragraphPrefix: String? = null // will be inserted before each line of refilled paragraph
     while (line >= 0) {
         val lineStart = doc.getLineStartOffset(line)
         val lineEnd = doc.getLineEndOffset(line)
@@ -59,13 +75,31 @@ fun getParagraph(doc: Document, offset: Int): Paragraph? {
         if (lineText.isBlank()) {
             break
         }
-        lines.add(lineText)
+
+        val commentStart = lineText.indexOf(lineCommentPrefix)
+        if (commentStart == -1 || lineText.substring(0, commentStart).isNotBlank()) {
+            // not a line with a comment
+            break
+        }
+
+        val commentTextStart = commentStart + lineCommentPrefix.length
+        if (paragraphPrefix == null) {
+            paragraphPrefix = lineText.substring(0, commentTextStart)
+        }
+
+        lines.add(lineText.substring(commentTextStart))
         paragraphStart = lineStart
         if (paragraphEnd == 0) {
             paragraphEnd = lineEnd
         }
         line--
     }
+
+    if (lines.isEmpty()) {
+        // no paragraph at the current line
+        return null
+    }
+
     lines.reverse()
 
     // down
@@ -77,12 +111,20 @@ fun getParagraph(doc: Document, offset: Int): Paragraph? {
         if (lineText.isBlank()) {
             break
         }
-        lines.add(lineText)
+        val commentStart = lineText.indexOf(lineCommentPrefix)
+        if (commentStart == -1 || lineText.substring(0, commentStart).isNotBlank()) {
+            // not a line with a comment
+            break
+        }
+
+        val commentTextStart = commentStart + lineCommentPrefix.length
+        lines.add(lineText.substring(commentTextStart))
+
         paragraphEnd = lineEnd
         line++
     }
 
-    return Paragraph(paragraphStart, paragraphEnd, lines)
+    return Paragraph(paragraphStart, paragraphEnd, lines, paragraphPrefix)
 }
 
 fun String.skipSpaces(fromIdx: Int = 0): Int {
@@ -104,6 +146,12 @@ fun fillParagraph(p: Paragraph): List<String> {
     val currentLine = StringBuilder()
     var wordStart: Int
     var wordEnd: Int
+
+    val indent = p.lines.firstOrNull()?.let { line0 ->
+        line0.substring(0, line0.skipSpaces())
+    } ?: ""
+    currentLine.append(indent)
+
     for (line in p.lines) {
         wordStart = line.skipSpaces()
         while (wordStart < line.length) {
@@ -115,8 +163,9 @@ fun fillParagraph(p: Paragraph): List<String> {
                 // if current line is empty and the word is long add it anyway
                 result.add(currentLine.toString())
                 currentLine.setLength(0)
+                currentLine.append(indent)
             }
-            else if (currentLine.isNotEmpty()) {
+            else if (currentLine.isNotBlank()) {
                 currentLine.append(' ')
             }
             currentLine.append(line.substring(wordStart, wordEnd))
