@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-class FillParagraphAction: AnAction("XFill") {
+class FillParagraphAction: AnAction("XFillParagraph") {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val editor = CommonDataKeys.EDITOR.getData(e.dataContext) ?: return
