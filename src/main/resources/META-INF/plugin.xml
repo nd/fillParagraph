@@ -5,10 +5,10 @@
 
     <idea-version since-build="243"/>
 
-    <version>2</version>
+    <version>6</version>
 
     <description>
-        Fill paragraph
+        Provides the XFillParagraph action which makes all lines in a paragraph roughly the same length.
     </description>
 
     <actions>
