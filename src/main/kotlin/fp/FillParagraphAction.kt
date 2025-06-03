@@ -171,7 +171,13 @@ fun fillParagraph(p: Paragraph): List<String> {
             else if (currentLine.isNotBlank()) {
                 currentLine.append(' ')
             }
-            currentLine.append(line.substring(wordStart, wordEnd))
+            val word = line.substring(wordStart, wordEnd)
+            currentLine.append(word)
+            if (word.endsWith(".") || word.endsWith("!") || word.endsWith('?')) {
+                result.add(currentLine.toString())
+                currentLine.setLength(0)
+                currentLine.append(indent)
+            }
             wordStart = line.skipSpaces(wordEnd)
         }
     }
